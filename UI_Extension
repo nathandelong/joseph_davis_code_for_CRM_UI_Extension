@@ -1,0 +1,71 @@
+// Note: this CRM extension does not require any external API calls. If external API calls were necessary, they would appear below:
+// Example external API call: 
+// const axios = require("axios");
+
+exports.main = async (context = {}, sendResponse) => {
+  // Store contact properties, configured as propertiesToSend in example-card.json . Note that properties pulled from the contact record are enclosed in curly braces, while other variables used in this extension are declared normally. 
+  const { address } = context.propertiesToSend;
+  const { city } = context.propertiesToSend;
+  const { state } = context.propertiesToSend; 
+  const {latitude } = context.propertiesToSend;
+  const {longitude} = context.propertiesToSend;
+  const URLBase = `https://www.google.com/maps/place/`; 
+  const URLAddress = address.replace(/ /g, "+");
+  const URLCity = city.replace(/ /g, "+");
+  const URLGoogle = URLBase + URLAddress +",+"+URLCity+",+"+state;
+  // This example card uses MapBox to generate a static map image which is displayed on the card. MapBox requires your access token to be included in the URL; insert your token below between the quotation marks. Sign up for a token at https://www.mapbox.com/developers
+  const MapBoxToken = "INSERT YOUR TOKEN HERE";
+  const mapBoxUri = `https://api.mapbox.com/styles/v1/mapbox/streets-v12.html?title=false&zoomwheel=false&access_token=${MapBoxToken}#17/${latitude}/${longitude}`;
+  try {
+    const mapSections = [
+      {
+        type: "tile",
+        body: [
+          {
+            type: "text",
+            format: "markdown",
+            //text: `Click here to view this address in Google Maps: ${URLGoogle} `,
+            text: `Click [here](${URLGoogle}) to view this location in Google Maps.`,
+          }
+        ],
+      },
+      {
+        "type": "image",
+        "src": `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/geojson(%7B%22type%22%3A%22Point%22%2C%22coordinates%22%3A%5B${longitude}%2C${latitude}%5D%7D)/${longitude},${latitude},12/900x600?access_token=${MapBoxToken}`,
+        "alt": "A map for this contact's location",
+      },
+      {
+        "type": "button",
+        // "text": "Load OpenStreetMap in HubSpot",
+        "text": "View Interactive Map",
+        "onClick": {
+          "type": "IFRAME",
+          "width": 890,
+          "height": 748,
+          "uri": mapBoxUri
+          // "uri": `https://api.mapbox.com/styles/v1/mapbox/streets-v12.html?title=false&zoomwheel=false&access_token=${MapBoxToken}#17/${latitude}/${longitude}`
+          //"uri": `https://calendar.google.com/calendar/embed?src=ndelong%40hubspot.com&ctz=America%2FNew_York" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"`
+        },
+      },
+      /* {
+        type: 'text',
+        format: 'markdown',
+        text: `Available 'context' data for development debugging: \   
+         ${JSON.stringify(context)}`,
+    } */
+    ];
+
+    sendResponse({
+      sections: [...mapSections],
+    });
+  } catch (error) {
+    // "message" will create an error feedback banner when it catches an error
+    sendResponse({
+      message: {
+        type: "ERROR",
+        body: `Error: ${error.message}`,
+      },
+      sections: [introMessage],
+    });
+  }
+};
