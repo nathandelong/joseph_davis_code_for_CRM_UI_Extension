@@ -1,0 +1,40 @@
+
+const hubspot = require('@hubspot/api-client');
+const axios = require('axios');
+
+exports.main = async (event, callback) => {
+
+  /*****
+    How to use secrets
+    Secrets are a way for you to save API keys or private apps and set them as a variable to use anywhere in your code
+    Each secret needs to be defined like the example below
+  *****/
+
+  const hubspotClient = new hubspot.Client({
+    accessToken: process.env.hstoken
+  });
+  
+  const street = event.inputFields['street'];
+  const city = event.inputFields['city'];
+  const state = event.inputFields['state'];
+  const fulladdress = `${street}, ${city}, ${state}`;
+try {
+  const URL1 = `https://api.mapbox.com/geocoding/v5/mapbox.places/`;
+  const URL = URL1 + fulladdress +".json?limit=1&access_token="+process.env.mapbox;
+  const geocoderUrl = URL;
+
+  const res = await axios.get(geocoderUrl).then(res => res.data);
+  const point = res.features[0].center;
+  console.log(point)
+  var longitude = point[0] ;
+  var latitude = point[1];
+  
+
+}
+  catch (e) {
+  e.message === 'HTTP request failed'
+    ? console.error(JSON.stringify(e.response, null, 2))
+    : console.error(e)
+}
+  callback({ outputFields: {street, city, state, fulladdress, longitude, latitude} });
+}
